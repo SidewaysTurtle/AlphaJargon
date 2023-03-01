@@ -1,9 +1,11 @@
 using System.Collections;
+
 using System.Collections.Generic;
 using UnityEngine;
 
 using MoonSharp.Interpreter;
 using MoonSharp.Interpreter.Loaders;
+using MoonSharp.Interpreter.Interop;
 
 /*
 script.Globals["test"] = new Action<string, MyEnum>(this.TestMethod);
@@ -16,64 +18,86 @@ namespace PixelGame
     [MoonSharp.Interpreter.MoonSharpUserData]
     public class PixelBehaviourScript : PixelComponent
     {
-        string FileData;
-        Script script = new Script();
+        public string FileData;
+        public override PixelGameObject parent{get;set;}
+        // public Script script;
         ScriptFunctionDelegate onKeyDown, onKeyUp;
         ScriptFunctionDelegate onUpdate, onStart;
 
         // public ScriptFunctionDelegate's to use as the pixel components
         ScriptFunctionDelegate onTriggerEnter, onTriggerStay, onTriggerExit;
         ScriptFunctionDelegate onCollisionEnter, onCollisionStay, onCollisionExit;
+
+        Script script;
         
         void OnEnable()
         {
-            JargonEngine.onKeyDownEvent += KeyDown;
+            AlphaJargon.onKeyDownEvent += KeyDown;
 
-            JargonEngine.onUpdateEvent += OnUpdateEventHandler;
+            AlphaJargon.onUpdateEvent += OnUpdateEventHandler;
 
-            PixelCollider.onTriggerEnter += TriggerEnter;
-            PixelCollider.onTriggerStay += TriggerStay;
-            PixelCollider.onTriggerExit += TriggerExit;
-
-            PixelCollider.onCollisionEnter += CollisionEnter;
-            PixelCollider.onCollisionStay += CollisionStay;
-            PixelCollider.onCollisionExit += CollisionExit;
+            PixelCollider.onTriggerEvent += TriggerEvent;
+            PixelCollider.onCollisionEvent  += CollisionEvent;
         }
 
         void OnDisable()
         {
-            JargonEngine.onKeyDownEvent -= KeyDown;
+            AlphaJargon.onKeyDownEvent -= KeyDown;
             
-            JargonEngine.onUpdateEvent -= OnUpdateEventHandler;
+            AlphaJargon.onUpdateEvent -= OnUpdateEventHandler;
 
-            PixelCollider.onTriggerEnter -= TriggerEnter;
-            PixelCollider.onTriggerStay -= TriggerStay;
-            PixelCollider.onTriggerExit -= TriggerExit;
-
-            PixelCollider.onCollisionEnter -= CollisionEnter;
-            PixelCollider.onCollisionStay -= CollisionStay;
-            PixelCollider.onCollisionExit -= CollisionExit;
+            PixelCollider.onTriggerEvent -= TriggerEvent;
+            PixelCollider.onCollisionEvent  -= CollisionEvent;
         }
 
-        public void add(string FileData)
+        public void add(DynValue FileData)
         {
-            // FileData = System.Text.RegularExpressions.Regex.Replace(FileData, @"\t", "");
-            // this.FileData = FileData.Replace("[[", "").Replace("]]", "");
+            string multiliteralString = FileData.ToString(); // Get the multiliteral string from the DynValue
+            string normalString = multiliteralString.Substring(1, multiliteralString.Length - 2); // Remove the first and last quotes enclosing the string
+            this.FileData = normalString;
+        }
+        public void addFile(DynValue FileData)
+        {
+            StartCoroutine(GetLuaFile(FileData.ToPrintString()));
+        }
+        private IEnumerator GetLuaFile(string filePath)
+        {
+            yield return LoadLuaFile.GetLuaFile(filePath, HandleLuaFile);
+        }
+        private void HandleLuaFile(string text)
+        {
+            this.FileData = text;
+        }
+        public override void Remove()
+        {
+            Destroy(this);
         }
         public void addPixelGameObjectToScriptGlobals(string key, IPixelObject value)
         {
+            // Debug.Log($"key: {key} + value: {value}");
             UserData.RegisterAssembly();
             script.Globals[key] = value;
         }
         public override void Create(PixelGameObject parent)
         {
+            this.parent = parent;
+            addPixelGameObjectToScriptGlobals(parent.name,parent); 
         }
 
+        
         public void RunScript()
         {
             RunScript(this.FileData);
         }
         public void RunScript(string FileData)
+        {
+            RunScript(this.script,FileData);
+        }
+        public void RunScript(Script script)
+        {
+            RunScript(script,this.FileData);
+        }
+        public void RunScript(Script script, string FileData)
         {
             UserData.RegisterAssembly();
 
@@ -93,7 +117,8 @@ namespace PixelGame
 
             onStart = script.Globals.Get("Start") != DynValue.Nil ? script.Globals.Get("Start").Function.GetDelegate() : null;
 
-            onKeyDown = script.Globals.Get("KeyDown") != DynValue.Nil ? script.Globals.Get("KeyDown").Function.GetDelegate() : null;
+            onKeyDown = script.Globals.Get("OnKeyDown") != DynValue.Nil ? script.Globals.Get("OnKeyDown").Function.GetDelegate(): null;
+
 
             onCollisionEnter = script.Globals.Get("OnCollisionEnter") != DynValue.Nil ? script.Globals.Get("OnCollisionEnter").Function.GetDelegate() : null;
             onCollisionStay = script.Globals.Get("OnCollisionStay") != DynValue.Nil ? script.Globals.Get("OnCollisionStay").Function.GetDelegate() : null;
@@ -119,33 +144,18 @@ namespace PixelGame
         // Key up and down
         private void KeyDown(string KeyCode)
         {
-            onKeyDown?.Invoke(KeyCode);
+            if(KeyCode != "None")
+                onKeyDown?.Invoke(DynValue.NewString(KeyCode));
         }
         //
-        private void TriggerEnter(Collider2D other, PixelGameObject parent)
+        private void TriggerEvent(Pixel other, PixelGameObject parent)
         {
             onTriggerEnter?.Invoke(DynValue.NewString(parent.name));
         }
-        private void TriggerStay(Collider2D other, PixelGameObject parent)
-        {
-            onTriggerStay?.Invoke(DynValue.NewString(parent.name));
-        }
-        private void TriggerExit(Collider2D other, PixelGameObject parent)
-        {
-            onTriggerExit?.Invoke(DynValue.NewString(parent.name));
-        }
         //
-        private void CollisionEnter(Collision2D other, PixelGameObject parent)
+        private void CollisionEvent(Pixel other, PixelGameObject parent)
         {
             onCollisionEnter?.Invoke(DynValue.NewString(parent.name));
         } 
-        private void CollisionStay(Collision2D other, PixelGameObject parent)
-        {
-            onCollisionStay?.Invoke(DynValue.NewString(parent.name));
-        }
-        private void CollisionExit(Collision2D other, PixelGameObject parent)
-        {
-            onCollisionExit?.Invoke(DynValue.NewString(parent.name));
-        }
     }
 }

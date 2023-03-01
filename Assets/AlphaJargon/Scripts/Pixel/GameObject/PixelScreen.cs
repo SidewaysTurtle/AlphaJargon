@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 
 using UnityEngine;
 using UnityEngine.UI;
@@ -8,10 +9,21 @@ using BuildingBlocks.DataTypes;
 
 using PixelGame;
 
-public class PixelScreen : PixelGameObject
+public class PixelScreen : MonoBehaviour, IPixelObject
 {
+    public delegate void onPixelScreenChangeDelegate(PixelGameObject parent,PixelScreen pixelScreen);
+    public static onPixelScreenChangeDelegate onPixelScreenCreateEvent, onPixelScreenDeleteEvent;
+    void OnEnable()
+    {
+        gridLayout = gameObject.GetComponent<GridLayoutGroup>();
+        CellSize = (int)gridLayout.cellSize.x;
+        GridSideSize = (int)gridLayout.constraintCount;
+    }
     // Every Physical Pixel 
+    public GridLayoutGroup gridLayout;
     public InspectableDictionary<int, Pixel> grid;
+    public static int CellSize;
+    public static int GridSideSize;
 
     public Pixel this[int index]
     {
@@ -23,21 +35,5 @@ public class PixelScreen : PixelGameObject
         {
             grid[index] = value;
         }
-    }
-
-    public PixelScreen ConvertSpriteStringToScreen(string SpriteString)
-    {
-        for(int index = 0; index < SpriteString.Length; index++)
-        {
-            try
-            {
-                grid[index].CharToPixel(SpriteString[index]);
-            }
-            catch(System.Exception e)
-            {
-                Debug.Log($"SpriteString must be 64 Characters long.\n{e}");
-            }            
-        }
-        return this;
     }
 }

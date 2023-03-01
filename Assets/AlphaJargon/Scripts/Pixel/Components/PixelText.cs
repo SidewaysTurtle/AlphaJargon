@@ -8,10 +8,16 @@ namespace PixelGame
     [MoonSharp.Interpreter.MoonSharpUserData]
     public class PixelText : PixelComponent
     {
-        PixelTextBox textBox;
+        public override PixelGameObject parent{get;set;}
+        PixelTextBox pixelTextBox;
         TextMeshProUGUI TextBox;
         public string content;
 
+        public override void Create(PixelGameObject parent)
+        {
+            this.parent = parent;
+            pixelTextBox = Instantiate<PixelTextBox>(Resources.Load<PixelTextBox>("Prefabs/Game/PixelTextBox"),parent.gameObject.transform);
+        }
         public PixelText add(string content, PixelPosition PP)
         {
             return add(content, PP.x, PP.y);
@@ -19,14 +25,13 @@ namespace PixelGame
         public PixelText add(string content, int x, int y)
         {
             this.content = content;
-            textBox.InstantiateContent(content, x, y);
+            pixelTextBox.InstantiateContent(content, x, y);
             return this;
         }
-
-        public override void Create(PixelGameObject parent)
+        public override void Remove()
         {
-            // FIXME: add to PixelGameObject instead as "Child"
-            textBox = Instantiate<PixelTextBox>(Resources.Load<PixelTextBox>("Prefabs/Game/PixelTextBox"),parent.gameObject.transform);
+            Destroy(pixelTextBox);
+            Destroy(this);
         }
     }
 }

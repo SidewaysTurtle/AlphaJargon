@@ -10,25 +10,25 @@ public class JargonCompiler : MonoBehaviour
 {
     [HideInInspector] public string FileData;
 
-    Script script = new Script();
+    public Script script = new Script();
     public ScriptFunctionDelegate onAwake, onInitialize, onStart;
 
 /*****************************************************/
     void OnEnable()
     {
-        JargonEngine.awakeGameEvent += AwakeGame;
-        JargonEngine.initializeGameEvent += InitializeGame;
-        JargonEngine.startGameEvent += StartGame;
+        AlphaJargon.awakeGameEvent += AwakeGame;
+        AlphaJargon.initializeGameEvent += InitializeGame;
+        AlphaJargon.startGameEvent += StartGame;
     }
 
     void OnDisable()
     {
-        JargonEngine.awakeGameEvent -= AwakeGame;
-        JargonEngine.initializeGameEvent -= InitializeGame;
-        JargonEngine.startGameEvent -= StartGame;
+        AlphaJargon.awakeGameEvent -= AwakeGame;
+        AlphaJargon.initializeGameEvent -= InitializeGame;
+        AlphaJargon.startGameEvent -= StartGame;
     }
 /*****************************************************/
-    public void Init(JargonEngine Jargon)
+    public void Init(AlphaJargon Jargon)
     {
         UserData.RegisterAssembly();
         script.Globals["jargon"] = Jargon;
@@ -37,6 +37,11 @@ public class JargonCompiler : MonoBehaviour
     public void add(string FileData)
     {
         this.FileData = FileData;
+    }
+    public void addPixelGameObjectToJargonScriptGlobals(string key, IPixelObject value)
+    {
+        UserData.RegisterAssembly();
+        script.Globals[key] = value;
     }
     public void RunScript()
     {
@@ -49,8 +54,7 @@ public class JargonCompiler : MonoBehaviour
         // sets default options
         script.Options.DebugPrint = (x) => {Debug.Log(x);};
         ((ScriptLoaderBase)script.Options.ScriptLoader).IgnoreLuaPathGlobal = true;
-        ((ScriptLoaderBase)script.Options.ScriptLoader).ModulePaths = ScriptLoaderBase.UnpackStringPaths(System.IO.Path.Combine(Application.persistentDataPath,"/modules/","?") + ".lua");
-
+        // ((ScriptLoaderBase)script.Options.ScriptLoader).ModulePaths = ScriptLoaderBase.UnpackStringPaths(System.IO.Path.Combine(Application.persistentDataPath,"/modules/","?") + ".lua");
         try
         {
             DynValue fn = script.LoadString(FileData);
@@ -71,14 +75,14 @@ public class JargonCompiler : MonoBehaviour
     // all event handlers that invoke script delegate
     private void AwakeGame()
     {
-        onAwake?.Invoke();
+        onAwake.Invoke();
     }
     private void InitializeGame()
     {
-        onInitialize?.Invoke();
+        onInitialize.Invoke();
     }
     private void StartGame()
     {
-        onStart?.Invoke();
+        onStart.Invoke();
     }
 }

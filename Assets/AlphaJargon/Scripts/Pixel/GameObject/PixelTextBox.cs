@@ -13,18 +13,16 @@ public class PixelTextBox : PixelGameObject
     public TextMeshProUGUI InstantiateContent(string content, int x, int y)
     {
         TextMeshProUGUI box = Textbox[x,y];
+        PixelTransform pixelTransform = add("Transform","PixelTransform");
         
-        x *= 100; y *= 100;
+        x *= PixelScreen.CellSize; y *= PixelScreen.CellSize;
 
         box = gameObject.AddComponent<TextMeshProUGUI>();
         box.font = Resources.Load<TMP_FontAsset>("TextMeshPro/AprilSans");
         box.alignment = TextAlignmentOptions.Center;
         box.autoSizeTextContainer = true;
         
-        // FIXME:
-        // this is gross but ill work for now
-        box.transform.localPosition = new Vector3(-350,-350);
-        box.transform.localPosition += new Vector3(x,y);
+        pixelTransform.move(new PixelPosition(x,y));
 
         box.text = content;
 
