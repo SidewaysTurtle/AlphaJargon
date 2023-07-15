@@ -37,6 +37,23 @@ namespace PixelGame
             }
         }
 
+        public dynamic this[System.Type type] {
+            get 
+            {
+                foreach(PixelComponent value in PixelComponents.Values)
+                {
+                    // https://stackoverflow.com/questions/983030/type-checking-typeof-gettype-or-is
+                    if(value.GetType() == type)
+                    {
+                        return value;
+                    }
+                }
+                return null;
+            }
+            private set{}
+        }
+
+
         public dynamic add(string key, string value)
         {
             return add(key,value,gameObject);
@@ -47,12 +64,12 @@ namespace PixelGame
            PixelComponent newValue;
             try
             {
-                newValue = (PixelComponent)go.AddComponent(System.Type.GetType($"PixelGame.{value}",true,true));
+                newValue = (PixelComponent)go.AddComponent(System.Type.GetType($"PixelGame.{value}",true,true)); //BAD UPCASTING
             }
             catch(Exception e)
             {
                 Debug.Log(e);
-                throw new MoonSharp.Interpreter.ScriptRuntimeException("Tried to add component that does not exist in namespace PixelGame. Check spelling.");
+                throw new MoonSharp.Interpreter.ScriptRuntimeException("Tried to add component that does not exist in namespace PixelGame. Check spelling and capitalization.");
             }
             if(newValue)
             {

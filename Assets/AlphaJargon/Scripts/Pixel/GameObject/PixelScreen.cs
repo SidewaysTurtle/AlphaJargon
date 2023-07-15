@@ -25,6 +25,7 @@ public class PixelScreen : MonoBehaviour, IPixelObject
     public static int CellSize;
     public static int GridSideSize;
 
+    // TODO: Doesn't check if inbounds.
     public Pixel this[int index]
     {
         get
@@ -34,6 +35,18 @@ public class PixelScreen : MonoBehaviour, IPixelObject
         set
         {
             grid[index] = value;
+        }
+    }
+
+    public Pixel this[int x, int y]
+    {
+        get
+        {
+            return grid[x * GridSideSize + GridSideSize];
+        }
+        set
+        {
+            grid[x * GridSideSize + GridSideSize] = value;
         }
     }
 }

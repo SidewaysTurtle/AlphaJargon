@@ -12,7 +12,7 @@ using PixelGame;
 // Eventually convert to using Sutherland-Hodgman algo to check
 // for polygon on polygon clipping (not Griner-Hormann cuz slow and not really needed for squares)
 
-public class PixelScreenManager
+public class PixelScreenManager : MonoBehaviour
 {
     public static PixelScreenManager Instance { get; private set; }
 

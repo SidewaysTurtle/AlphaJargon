@@ -12,34 +12,33 @@ namespace PixelGame
     public class PixelTransform : PixelComponent
     {
         public override PixelGameObject parent{get;set;}
-        public delegate void OnWinLevel();
-        public static OnWinLevel OnWinLevelEvent;
 
         public override void Create(PixelGameObject parent)
         {
             this.parent = parent;
         }
-        public PixelTransform add(PixelPosition pp /*hehe*/)
+
+        public PixelTransform add(int x, int y, bool ActivateEvent = true)
         {
-            move(pp);
+            return add(new PixelPosition(x,y), ActivateEvent);
+        }
+
+        public PixelTransform add(PixelPosition pp /*hehe*/, bool ActivateEvent = true)
+        {
+            move(pp, ActivateEvent);
             return this;
         }
 
-        public PixelTransform add(int x, int y)
+        public PixelPosition move(PixelPosition pixelPosition, bool ActivateEvent = true)
         {
-            return add(new PixelPosition(x,y));
+            return move(pixelPosition.x, pixelPosition.y, ActivateEvent);
         }
 
-        public PixelPosition move(PixelPosition pixelPosition)
+        public PixelPosition move(int x, int y, bool ActivateEvent = true)
         {
-            return move(pixelPosition.x, pixelPosition.y);
-        }
-
-        public PixelPosition move(int x, int y)
-        {
-            Vector3 trans = new Vector3(x * PixelScreen.CellSize,y * PixelScreen.CellSize);
+            Vector3 trans = new Vector3(x * PixelScreen.CellSize, y * PixelScreen.CellSize);
             PixelPosition translation = new PixelPosition(x,y);
-            if(!CheckCollision(translation))
+            if(!PixelCollider.CheckCollision(translation, parent, ActivateEvent))
             {
                 transform.Translate(trans);
                 parent.position += translation;
@@ -47,42 +46,6 @@ namespace PixelGame
             return parent.position;
         }
 
-        private bool CheckCollision(PixelPosition translation)
-        {
-            // List<KeyValuePair<PixelPosition, Pixel>>
-            List<KeyValuePair<PixelPosition, Pixel>> selfpixels = PixelScreenManager.Instance.GetPixelsWithCollider(parent, translation);
-            List<KeyValuePair<PixelPosition, Pixel>> otherpixels = PixelScreenManager.Instance.GetPixelsWithColliderOtherThan(parent);
-
-
-            foreach(KeyValuePair<PixelPosition, Pixel> self in selfpixels)
-            {
-                foreach(KeyValuePair<PixelPosition, Pixel> other in otherpixels)
-                {
-                    if(self.Key == other.Key)
-                    {
-                        if(other.Value.Collider.isTrigger)
-                        {
-                            // foreach(Pixel sprite in PixelScreenManager.Instance.GetSpritePixelsAtPosition(other.Key))
-                            // {
-                            //     if(sprite.isWin)
-                            //     {
-                            //         PixelTransform.OnWinLevelEvent?.Invoke();
-                            //         return false;
-                            //     }
-                            // }
-                            PixelCollider.onTriggerEvent?.Invoke(other.Value, parent);
-                            return false;
-                        }
-                        else
-                        {
-                            PixelCollider.onCollisionEvent?.Invoke(other.Value, parent);
-                            return true;
-                        }
-                    }
-                }
-            }
-            return false;
-        }
         public override void Remove()
         {
             Destroy(this);

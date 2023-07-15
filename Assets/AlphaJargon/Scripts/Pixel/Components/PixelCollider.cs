@@ -19,9 +19,9 @@ namespace PixelGame
     public class PixelCollider : PixelComponent
     {
         public delegate void OnTriggerDelegate(Pixel other, PixelGameObject parent);
-        public static OnTriggerDelegate onTriggerEvent;
+        public static OnTriggerDelegate onTriggerEnterEvent;
         public delegate void OnCollisionDelegate(Pixel other, PixelGameObject parent);
-        public static OnCollisionDelegate onCollisionEvent;
+        public static OnCollisionDelegate onCollisionEnterEvent;
         //
         public bool isTrigger = false;
         //
@@ -86,6 +86,8 @@ namespace PixelGame
             //     ColliderToPixel(screen.grid[pp.ToIndex()], this);
             // return screen;
 
+            this.isTrigger = isTrigger;
+
             var outputStrings = Enumerable.Range(0, ColliderString.Length / PixelScreen.GridSideSize)
                 .Select(i => ColliderString.Substring(i * PixelScreen.GridSideSize, PixelScreen.GridSideSize));
 
@@ -99,24 +101,25 @@ namespace PixelGame
                 sb.Append(str);
             }
             string reversedString = sb.ToString();
-
-            // char[] charArray = reversedString.ToCharArray();
-            // Array.Reverse(charArray);
+            
+            // slow
+                // char[] charArray = reversedString.ToCharArray();
+                // Array.Reverse(charArray);
             string finalString = new string(reversedString);
             for(int i = 0; i < finalString.Count(); i++)
             {
                 if(finalString[i] != 'o')
-                    ColliderToPixel(screen.grid[i], this, isTrigger);
+                    screen.grid[i].Collider = this;
             }
             return screen;
         }
 
-        // did this for condormity sake with pixelsprite
-        public void ColliderToPixel(Pixel pixel, PixelCollider pc, bool isTrigger = false)
-        {
-            pixel.Collider = pc;
-            pixel.Collider.isTrigger = isTrigger;
-        }
+        // // did this for condormity sake with pixelsprite
+        // private void ColliderToPixel(Pixel pixel, PixelCollider pc, bool isTrigger = false)
+        // {
+        //     pixel.Collider = pc;
+        //     pixel.Collider.isTrigger = isTrigger;
+        // }
 
         List<Vector2> MyVector2ToVector2(List<MyVector2> myVector2List)
         {
@@ -127,33 +130,69 @@ namespace PixelGame
             }
             return vector2List;
         }
+
+        public static bool CheckCollision(PixelPosition translation, PixelGameObject parent, bool ActivateEvent = true)
+        {
+            // List<KeyValuePair<PixelPosition, Pixel>>
+            List<KeyValuePair<PixelPosition, Pixel>> selfpixels = PixelScreenManager.Instance.GetPixelsWithCollider(parent, translation);
+            List<KeyValuePair<PixelPosition, Pixel>> otherpixels = PixelScreenManager.Instance.GetPixelsWithColliderOtherThan(parent);
+            
+            if(selfpixels.Count == 0)
+                return true;
+
+            //FIXME: Might want to future proof this by getting rid of the [0] and making it a list based system.
+            KeyValuePair<PixelPosition, Pixel> self = selfpixels[0];
+            if(self.Key.x < 0 || self.Key.x > PixelScreen.GridSideSize - 1 || self.Key.y < 0 || self.Key.y > PixelScreen.GridSideSize - 1)
+                return true;
+
+            foreach(KeyValuePair<PixelPosition, Pixel> other in otherpixels)
+            {
+                if(self.Key == other.Key)
+                {
+                    if(other.Value.Collider.isTrigger)
+                    {
+                        if(ActivateEvent)
+                            PixelCollider.onTriggerEnterEvent?.Invoke(other.Value, parent);
+                        return false;
+                    }
+                    else
+                    {
+                        if(ActivateEvent)
+                            PixelCollider.onCollisionEnterEvent?.Invoke(other.Value, parent);
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        // OBSOLETE
+        // public PixelComponent addPolygonCollider2D(List<PixelPosition> pixelPositions)
+        // {
+        //     // convert all the pixel positions to coords
+        //     List<MyVector2> Points = new List<MyVector2>();
+        //     float _offSet = (PixelScreen.GridSideSize * PixelScreen.CellSize) / 2.000f;
+        //     foreach (PixelPosition pixelPosition in pixelPositions)
+        //     {
+                
+        //         Points.Add(new MyVector2(pixelPosition.x * PixelScreen.CellSize - _offSet, (PixelScreen.GridSideSize - pixelPosition.y - 1) * PixelScreen.CellSize - _offSet));
+        //         Points.Add(new MyVector2(pixelPosition.x * PixelScreen.CellSize - _offSet, (PixelScreen.GridSideSize - pixelPosition.y) * PixelScreen.CellSize - _offSet));
+        //         Points.Add(new MyVector2((pixelPosition.x + 1) * PixelScreen.CellSize - _offSet, (PixelScreen.GridSideSize - pixelPosition.y) * PixelScreen.CellSize - _offSet));
+        //         Points.Add(new MyVector2((pixelPosition.x + 1) * PixelScreen.CellSize - _offSet, (PixelScreen.GridSideSize - pixelPosition.y - 1) * PixelScreen.CellSize - _offSet));
+        //     }
+
+        //     // get the perimeter using 'quickhull' convex hull algorithm
+        //     PolygonCollider2D pc2d = gameObject.AddComponent<PolygonCollider2D>();
+        //     pc2d.SetPath(0, MyVector2ToVector2(QuickhullAlgorithm2D.GenerateConvexHull(Points, false)));
+        //     pc2d.isTrigger = isTrigger;
+        //     pixelCollider.Add(pc2d);
+
+        //     // adds the polygoncollider2d to all the pixels it contains so the pixel
+        //     // can be used to know which collider its apart of
+        //     // AddColliderToScreen(pixelPositions);
+
+        //     return this;
+        // }
     }
 }
 
-// public PixelComponent add(List<PixelPosition> pixelPositions, bool isTrigger = false)
-// {
-//     // convert all the pixel positions to coords
-//     List<MyVector2> Points = new List<MyVector2>();
-//     float _offSet = (PixelScreen.GridSideSize * PixelScreen.CellSize) / 2.000f;
-//     foreach (PixelPosition pixelPosition in pixelPositions)
-//     {
-        
-//         Points.Add(new MyVector2(pixelPosition.x * PixelScreen.CellSize - _offSet, (PixelScreen.GridSideSize - pixelPosition.y - 1) * PixelScreen.CellSize - _offSet));
-//         Points.Add(new MyVector2(pixelPosition.x * PixelScreen.CellSize - _offSet, (PixelScreen.GridSideSize - pixelPosition.y) * PixelScreen.CellSize - _offSet));
-//         Points.Add(new MyVector2((pixelPosition.x + 1) * PixelScreen.CellSize - _offSet, (PixelScreen.GridSideSize - pixelPosition.y) * PixelScreen.CellSize - _offSet));
-//         Points.Add(new MyVector2((pixelPosition.x + 1) * PixelScreen.CellSize - _offSet, (PixelScreen.GridSideSize - pixelPosition.y - 1) * PixelScreen.CellSize - _offSet));
-//     }
-
-//     // get the perimeter using 'quickhull' convex hull algorithm
-//     PolygonCollider2D pc2d = gameObject.AddComponent<PolygonCollider2D>();
-//     pc2d.SetPath(0, MyVector2ToVector2(QuickhullAlgorithm2D.GenerateConvexHull(Points, false)));
-//     pc2d.isTrigger = isTrigger;
-//     this.isTrigger = isTrigger;
-//     pixelCollider.Add(pc2d);
-
-//     // adds the polygoncollider2d to all the pixels it contains so the pixel
-//     // can be used to know which collider its apart of
-//     AddColliderToScreen(pixelPositions);
-
-//     return this;
-// }

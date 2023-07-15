@@ -20,34 +20,36 @@ namespace PixelGame
     {
         public string FileData;
         public override PixelGameObject parent{get;set;}
-        // public Script script;
-        ScriptFunctionDelegate onKeyDown, onKeyUp;
-        ScriptFunctionDelegate onUpdate, onStart;
+        public Script script = new Script();
+        ScriptFunctionDelegate onKeyDown, onKeyUp, onKeyStay;
+        ScriptFunctionDelegate onUpdate, onEnable;
 
         // public ScriptFunctionDelegate's to use as the pixel components
         ScriptFunctionDelegate onTriggerEnter, onTriggerStay, onTriggerExit;
         ScriptFunctionDelegate onCollisionEnter, onCollisionStay, onCollisionExit;
-
-        Script script;
         
         void OnEnable()
         {
             AlphaJargon.onKeyDownEvent += KeyDown;
+            AlphaJargon.onKeyUpEvent += KeyUp;
+            AlphaJargon.onKeyStayEvent += KeyStay;
 
-            AlphaJargon.onUpdateEvent += OnUpdateEventHandler;
+            AlphaJargon.onUpdateEvent += () => onUpdate?.Invoke();
 
-            PixelCollider.onTriggerEvent += TriggerEvent;
-            PixelCollider.onCollisionEvent  += CollisionEvent;
+            PixelCollider.onTriggerEnterEvent += TriggerEnterEvent;
+            PixelCollider.onCollisionEnterEvent  += CollisionEnterEvent;
         }
 
         void OnDisable()
         {
             AlphaJargon.onKeyDownEvent -= KeyDown;
+            AlphaJargon.onKeyUpEvent -= KeyUp;
+            AlphaJargon.onKeyStayEvent -= KeyStay;
             
-            AlphaJargon.onUpdateEvent -= OnUpdateEventHandler;
+            AlphaJargon.onUpdateEvent -= () => onUpdate?.Invoke();
 
-            PixelCollider.onTriggerEvent -= TriggerEvent;
-            PixelCollider.onCollisionEvent  -= CollisionEvent;
+            PixelCollider.onTriggerEnterEvent -= TriggerEnterEvent;
+            PixelCollider.onCollisionEnterEvent  -= CollisionEnterEvent;
         }
 
         public void add(DynValue FileData)
@@ -78,26 +80,23 @@ namespace PixelGame
             UserData.RegisterAssembly();
             script.Globals[key] = value;
         }
+        public void addAllPixelGameObjectToScriptGlobals(string key, IPixelObject value)
+        {
+            // Debug.Log($"key: {key} + value: {value}");
+            UserData.RegisterAssembly();
+            script.Globals[key] = value;
+        }
         public override void Create(PixelGameObject parent)
         {
             this.parent = parent;
             addPixelGameObjectToScriptGlobals(parent.name,parent); 
         }
 
-        
         public void RunScript()
         {
             RunScript(this.FileData);
         }
         public void RunScript(string FileData)
-        {
-            RunScript(this.script,FileData);
-        }
-        public void RunScript(Script script)
-        {
-            RunScript(script,this.FileData);
-        }
-        public void RunScript(Script script, string FileData)
         {
             UserData.RegisterAssembly();
 
@@ -115,10 +114,11 @@ namespace PixelGame
             // cant do null checks cuz .Get returns DynValue.Nil not null
             // onStart = script.Globals.Get("Start").Function.GetDelegate() ?? null;
 
-            onStart = script.Globals.Get("Start") != DynValue.Nil ? script.Globals.Get("Start").Function.GetDelegate() : null;
+            onEnable = script.Globals.Get("Start") != DynValue.Nil ? script.Globals.Get("Start").Function.GetDelegate() : null;
 
             onKeyDown = script.Globals.Get("OnKeyDown") != DynValue.Nil ? script.Globals.Get("OnKeyDown").Function.GetDelegate(): null;
-
+            onKeyUp = script.Globals.Get("OnKeyUp") != DynValue.Nil ? script.Globals.Get("OnKeyUp").Function.GetDelegate(): null;
+            onKeyStay = script.Globals.Get("OnKeyStay") != DynValue.Nil ? script.Globals.Get("OnKeyStay").Function.GetDelegate(): null;
 
             onCollisionEnter = script.Globals.Get("OnCollisionEnter") != DynValue.Nil ? script.Globals.Get("OnCollisionEnter").Function.GetDelegate() : null;
             onCollisionStay = script.Globals.Get("OnCollisionStay") != DynValue.Nil ? script.Globals.Get("OnCollisionStay").Function.GetDelegate() : null;
@@ -131,14 +131,8 @@ namespace PixelGame
             
             
             // onAwake
-            onStart?.Invoke();
+            onEnable?.Invoke();
             onUpdate = script.Globals.Get("Update") != DynValue.Nil ? script.Globals.Get("Update").Function.GetDelegate() : null;
-        }
-
-        // all event handlers that invoke script delegate
-        private void OnUpdateEventHandler()
-        {
-            onUpdate?.Invoke();
         }
 
         // Key up and down
@@ -147,13 +141,24 @@ namespace PixelGame
             if(KeyCode != "None")
                 onKeyDown?.Invoke(DynValue.NewString(KeyCode));
         }
+
+        private void KeyUp(string KeyCode)
+        {
+            if(KeyCode != "None") // possibilty of this triggering is slim to none. But might as well.
+                onKeyUp?.Invoke(DynValue.NewString(KeyCode));
+        }
+        private void KeyStay(string KeyCode)
+        {
+            if(KeyCode != "None") // possibilty of this triggering is slim to none. But might as well.
+                onKeyStay?.Invoke(DynValue.NewString(KeyCode));
+        }
         //
-        private void TriggerEvent(Pixel other, PixelGameObject parent)
+        private void TriggerEnterEvent(Pixel other, PixelGameObject parent)
         {
             onTriggerEnter?.Invoke(DynValue.NewString(parent.name));
         }
         //
-        private void CollisionEvent(Pixel other, PixelGameObject parent)
+        private void CollisionEnterEvent(Pixel other, PixelGameObject parent)
         {
             onCollisionEnter?.Invoke(DynValue.NewString(parent.name));
         } 

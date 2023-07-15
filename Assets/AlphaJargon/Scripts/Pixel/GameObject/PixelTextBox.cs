@@ -13,9 +13,11 @@ public class PixelTextBox : PixelGameObject
     public TextMeshProUGUI InstantiateContent(string content, int x, int y)
     {
         TextMeshProUGUI box = Textbox[x,y];
+        // FIXME: Adding new PixelComponent in scene without PixelGameObject
         PixelTransform pixelTransform = add("Transform","PixelTransform");
         
-        x *= PixelScreen.CellSize; y *= PixelScreen.CellSize;
+        x *= PixelScreen.CellSize; 
+        y *= PixelScreen.CellSize;
 
         box = gameObject.AddComponent<TextMeshProUGUI>();
         box.font = Resources.Load<TMP_FontAsset>("TextMeshPro/AprilSans");

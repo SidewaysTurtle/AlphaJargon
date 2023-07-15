@@ -57,9 +57,9 @@ namespace PixelGame
                 sb.Append(str);
             }
             string reversedString = sb.ToString();
-
-            // char[] charArray = reversedString.ToCharArray();
-            // Array.Reverse(charArray);
+            // slow
+                // char[] charArray = reversedString.ToCharArray();
+                // Array.Reverse(charArray);
             string finalString = new string(reversedString);
             return add(finalString);
         }
@@ -71,7 +71,8 @@ namespace PixelGame
             }
             else
             {
-                // AddSpriteStringToScreen(String.Concat(Enumerable.Repeat("o", screen.grid.Count)));
+                // Slow
+                    // AddSpriteStringToScreen(String.Concat(Enumerable.Repeat("o", screen.grid.Count)));
                 string oString = "";
                 for (int i = 0; i < screen.grid.Count; i++)
                     oString += "o";
@@ -81,37 +82,27 @@ namespace PixelGame
         }
         public PixelScreen AddSpriteStringToScreen(string SpriteString)
         {
-            // Enumerable.Range(0, SpriteString.Length)
-            //     .ToList()
-            //     .ForEach(index => CharToPixel(screen.grid[index], SpriteString[index])
-            // );
+            // slow
+                // Enumerable.Range(0, SpriteString.Length)
+                //     .ToList()
+                //     .ForEach(index => CharToPixel(screen.grid[index], SpriteString[index])
+                // );
 
             for(int index = 0; index < SpriteString.Length; index++)
-                CharToPixel(SpriteString[index],screen.grid[index]);
+                CharToPixel(screen.grid[index], SpriteString[index]);
             return screen;
         }
         // Use pseudo signed bit of 1
-        public void CharToPixel(char letter, Pixel pixel)
+        private void CharToPixel(Pixel pixel, char letter)
         {
-            // if(imageChars.Contains(letter))
-            // {
-            //     pixel.Image.sprite = image[Array.IndexOf(imageChars,letter)];
-            //     pixel.Image.color = RGBToColor(1255255255255);
-            // }
-            // else 
-            // if (System.Enum.TryParse<SpriteChars.PixelColor>(letter.ToString().ToLower(), out SpriteChars.PixelColor pixelColor))
-            pixel.Image.color = LongRGBToColor(SpriteChars.instance.charColors[letter]);
+            if (System.Enum.TryParse<PixelColor>(letter.ToString().ToLower(), out PixelColor pixelColor))
+            {
+                pixel.Image.color = RGBToColor((long)pixelColor);
+            }
             pixel.Sprite = this;
         }
 
-        // char[] imageChars = {'c','w','d','f','u','m'};
-        // List<Sprite> image = new List<Sprite>();
-        // void Awake()
-        // {
-        //     //                                                           'c',                                'w',                                    'd',                                     'f',                                     'u',                                      'm'
-        //     image.AddRange(new List<Sprite>{(Resources.Load<Sprite>("Art/Coots")), Resources.Load<Sprite>("Art/Wall"), Resources.Load<Sprite>("Art/Door_Closed"), Resources.Load<Sprite>("Art/Door_Open"), Resources.Load<Sprite>("Art/Camera_On"), Resources.Load<Sprite>("Art/Camera_Off")}); 
-        // }
-        public static Color LongRGBToColor(long rgb)
+        public static Color RGBToColor(long rgb)
         {  
             //    r   g   b
             // 1 000 000 000
@@ -122,4 +113,12 @@ namespace PixelGame
             return new Color32(r,g,b,a);
         }
     }
+}
+
+public enum PixelColor : long
+{
+    o = 1000000000000,
+    p = 1255160122255,
+    y = 1255255000255,
+    b = 1164219232255
 }
